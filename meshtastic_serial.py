@@ -19,9 +19,6 @@ except ImportError:
 	raise ImportError('pubsub library not found (pip install pypubsub)') # Confirm this Pypi package name...
 
 
-# Global variables
-node_long_names = {}
-
 # Initialize logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)9s | %(funcName)s | %(message)s')
 
@@ -32,73 +29,131 @@ def now():
 	return time.strftime('%Y-%m-%d %H:%M:%S')
 
 
-def on_connect(interface, topic=pub.AUTO_TOPIC):
-	'''
-	Callback function for connection established
+class Meshtastic(object):
+	def __init__(self, serial: str):
+		self.interface = None   # We will define the interface in the run() function
+		self.nodes     = {}     # Nodes will populate with the on_node() callback
+		self.serial    = serial # Serial device to use for the Meshtastic interface
+		
 
-	:param interface: Meshtastic interface
-	:param topic:     PubSub topic
-	'''
+	def disconnect(self):
+		'''Disconnect from the Meshtastic interface'''
 
-	logging.info('Connection established')
-
-
-def on_disconnect(interface, topic=pub.AUTO_TOPIC):
-	'''
-	Callback function for connection lost
-
-	:param interface: Meshtastic interface
-	:param topic:     PubSub topic
-	'''
-
-	logging.error('Connection lost')
-
-
-def on_packet(packet: dict):
-	'''
-	Callback function for received packets
-
-	:param packet: Packet received
-	'''
-
-	if packet['decoded']['portnum'] == 'TEXT_MESSAGE_APP':
-		sender_id = str(packet['from'])
-		message = packet['decoded']['payload'].decode('utf-8')
-
-		# Message from self
-		if sender_id == str(interface.myInfo.my_node_num):
-			print(f'{now()} {node_long_names[sender_id]}: {message}')
-
-		# Message from others
-		if sender_id in node_long_names:
-			print(f'{now()} {node_long_names[sender_id]}: {message}')
-
-		# Unknown message (maybe trigger for rescanning the nodes if we dont find the sender in the list)
+		if pub.getDefaultTopicMgr().hasSubscribers(): 
+			pub.unsubAll()
+			logging.info('Unsubscribed from all Meshtastic topics')
 		else:
-			print(f'{now()} UNK: {message}')
+			logging.warning('No Meshtastic topics to unsubscribe from')
+
+		if self.interface:
+			self.interface.close()
+			logging.info('Meshtastic interface closed')
+		else:
+			logging.warning('No Meshtastic interface to close')
 
 
-def on_node(interface, topic=pub.AUTO_TOPIC):
-	'''
-	Callback function for node updates
+	def run(self):
+		'''Start the Meshtastic interface and subscribe to the callback functions'''
+		
+		if devices := findPorts():
+			if not os.path.exists(args.serial) or not args.serial in devices:
+				raise SystemExit(f'Invalid serial device: {args.serial} (Available: {devices})') # Show available devices if the specified device is invalid
+		else:
+			raise SystemExit('No serial devices found')
 
-	:param interface: Meshtastic interface
-	:param topic:     PubSub topic
-	'''
+		# Initialize the Meshtastic interface
+		self.interface = SerialInterface(self.serial)
 
-	if not interface.nodes:
-		logging.warning('No nodes found')
-		return
+		logging.info('Meshtastic interface started over serial on {self.serial}')
 
-	for node in interface.nodes.values():
-		short = node['user']['shortName']
-		long  = node['user']['longName'].encode('ascii', 'ignore').decode().rstrip()
-		num   = str(node['num'])
-		id    = node['user']['id']
-		mac   = node['user']['macaddr']
-		hw    = node['user']['hwModel']
+		# Get the current node information
+		me = self.interface.nodes[self.interface.myInfo.my_node_num]
+		logging.debug(me)
+		
+		# Create the Meshtastic callback subscriptions
+		pub.subscribe(self.event_connect,    'meshtastic.connection.established')
+		pub.subscribe(self.event_disconnect, 'meshtastic.connection.lost')
+		pub.subscribe(self.on_node,          'meshtastic.node.updated')
+		pub.subscribe(self.on_packet,        'meshtastic.receive')
 
-		node_long_names[num] = long # we store the node updates in a dictionary so we can parse the names of who sent incomming messages
+		logging.debug('Listening for Meshtastic events...')
+
+		# The meshtastic.receive topics can be broken down further:
+		# pub.subscribe(self.on_text,      'meshtastic.receive.text')
+		# pub.subscribe(self.on_position,  'meshtastic.receive.position')
+		# pub.subscribe(self.on_user,      'meshtastic.receive.user')
+		# pub.subscribe(self.on_data,      'meshtastic.receive.data.portnum')
+
+		
+	def event_connect(self, interface, topic=pub.AUTO_TOPIC):
+		'''
+		Callback function for connection established
+
+		:param interface: Meshtastic interface
+		:param topic:     PubSub topic
+		'''
+
+		logging.info('Connection established')
+
+
+	def event_disconnect(self, interface, topic=pub.AUTO_TOPIC):
+		'''
+		Callback function for connection lost
+
+		:param interface: Meshtastic interface
+		:param topic:     PubSub topic
+		'''
+
+		logging.warning('Connection lost')
+
+
+	def on_packet(self, packet: dict):
+		'''
+		Callback function for received packets
+
+		:param packet: Packet received
+		'''
+
+		# Handle incoming text messages
+		if packet['decoded']['portnum'] == 'TEXT_MESSAGE_APP':
+			sender = packet['from']
+			msg    = packet['decoded']['payload'].decode('utf-8')
+
+			# Message from self
+			if sender == self.interface.myInfo.my_node_num:
+				print(f'{now()} {self.nodes[sender]}: {msg}') # Can do custom formatting here or ignore the message, just an example
+
+			# Message from others
+			if sender in self.nodes:
+				print(f'{now()} {self.nodes[sender]}: {msg}')
+
+			# Unknown sender
+			else:
+				# TODO: Trigger request for node update here
+				print(f'{now()} UNK: {msg}')
+
+
+	def on_node(self, interface, topic=pub.AUTO_TOPIC):
+		'''
+		Callback function for node updates
+
+		:param interface: Meshtastic interface
+		:param topic:     PubSub topic
+		'''
+
+		if not interface.nodes:
+			logging.warning('No nodes found')
+			return
+
+		for node in interface.nodes.values():
+			short = node['user']['shortName']
+			long  = node['user']['longName'].encode('ascii', 'ignore').decode().rstrip()
+			num   = node['num']
+			id    = node['user']['id']
+			mac   = node['user']['macaddr']
+			hw    = node['user']['hwModel']
+
+			self.nodes[num] = long # we store the node updates in a dictionary so we can parse the names of who sent incomming messages
 
 
 
@@ -107,27 +162,11 @@ if __name__ == '__main__':
 	parser.add_argument('--serial', default='/dev/ttyACM0', help='Use serial interface')
 	args = parser.parse_args()
 
-	# Check if the serial device exists
-	if available_devices := findPorts():
-		if not os.path.exists(args.serial) or not args.serial in available_devices:
-			raise SystemExit(f'Invalid serial device: {args.serial} (Available: {available_devices})')
-	else:
-		raise SystemExit('No serial devices found')
+	# Define the Meshtastic client
+	mesh = Meshtastic(args.serial)
 
 	# Initialize the Meshtastic interface
-	interface = SerialInterface(args.serial)
-
-	# Create the Meshtastic callback subscriptions
-	pub.subscribe(on_connect,    'meshtastic.connection.established')
-	pub.subscribe(on_disconnect, 'meshtastic.connection.lost')
-	pub.subscribe(on_node,       'meshtastic.node.updated')
-	pub.subscribe(on_packet,     'meshtastic.receive')
-
-	# The meshtastic.receive topics can be broken down further:
-	# pub.subscribe(on_text,      'meshtastic.receive.text')
-	# pub.subscribe(on_position,  'meshtastic.receive.position')
-	# pub.subscribe(on_user,      'meshtastic.receive.user')
-	# pub.subscribe(on_data,      'meshtastic.receive.data.portnum')
+	mesh.run()
 
 	# Keep-alive loop
 	try:
@@ -136,4 +175,4 @@ if __name__ == '__main__':
 	except KeyboardInterrupt:
 		pass
 	finally:
-		interface.close()
+		mesh.disconnect()
