@@ -171,9 +171,10 @@ class Bot():
 						await self.action(target, 'explodes')
 					elif msg == '!ping':
 						await self.sendmsg(target, 'Pong!')
-					elif msg.startswith('!say') and len(msg.split()) > 1: # Only allow !say if there is something to say
-						option = ' '.join(msg.split()[1:]) # Everything after !say is stored here
-						await self.sendmsg(target, option)
+					elif msg.startswith('!mesh') and len(msg.split()) > 1:
+						message = ' '.join(msg.split()[1:])
+						# Implement outgoing meshtastic message here
+						#await self.sendmesh(message)
 					self.last = time.time() # Update the last command time if it starts with ! character to prevent command flooding
 
 
