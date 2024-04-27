@@ -13,8 +13,8 @@ Reading device packets over serial or TCP allows you to see the decoded data eas
 
 The goal is to experiment with the possibilities of Python as a means of interfacing with a Meshtastic device, playing with basic I/O operations, etc. My first project is going to be a relay for IRC & Meshtastic to communicate.
 
-#### Stay tuned!
-
+## Updates
+- Threw in an IRC skeleton where the serial controller will interface with. Will have to consider how handle asyncronous comms over serial...
 ___
 
 ###### Mirrors for this repository: [acid.vegas](https://git.acid.vegas/meshtastic) • [SuperNETs](https://git.supernets.org/acidvegas/meshtastic) • [GitHub](https://github.com/acidvegas/meshtastic) • [GitLab](https://gitlab.com/acidvegas/meshtastic) • [Codeberg](https://codeberg.org/acidvegas/meshtastic)

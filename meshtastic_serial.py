@@ -64,6 +64,10 @@ class Meshtastic(object):
 		# Initialize the Meshtastic interface
 		self.interface = SerialInterface(self.serial)
 
+		# Interface over TCP instead of serial:
+		#from meshtastic.tcp_interface import TCPInterface
+    	#self.interface = TCPInterface(args.tcp)
+
 		logging.info('Meshtastic interface started over serial on {self.serial}')
 
 		# Get the current node information
@@ -160,6 +164,7 @@ class Meshtastic(object):
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Meshtastic Interface')
 	parser.add_argument('--serial', default='/dev/ttyACM0', help='Use serial interface')
+	parser.add_argument('--tcp',    default='meshtastic.local'. help='Use TCP interface')
 	args = parser.parse_args()
 
 	# Define the Meshtastic client
