@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Meshtastic Serial Interface - Developed by Acidvegas in Python (https://git.acid.vegas)
+# Meshtastic Serial Interface - Developed by Acidvegas in Python (https://git.acid.vegas/meshtastic)
 
 import argparse
 import logging
@@ -10,7 +10,7 @@ try:
 	import meshtastic
 	from meshtastic.serial_interface import SerialInterface
 	from meshtastic.util             import findPorts
-   	from meshtastic.tcp_interface    import TCPInterface		
+	from meshtastic.tcp_interface    import TCPInterface
 except ImportError:
 	raise ImportError('meshtastic library not found (pip install meshtastic)')
 
@@ -33,57 +33,44 @@ def now():
 class MeshtasticClient(object):
 	def __init__(self):
 		self.interface = None # We will define the interface in the connect() function
+		self.me        = {}   # We will populate this with the event_connect() callback
 		self.nodes     = {}   # Nodes will populate with the event_node() callback
 
-  
-  	def connect(self, option: str, value: str):
+
+	def connect(self, option: str, value: str):
 		'''
   		Connect to the Meshtastic interface
-    
-    	:param option: The interface option to connect to
+
+		:param option: The interface option to connect to
 		:param value:  The value of the interface option
-     	'''
-  
-		if option == 'serial':
-			if devices := findPorts():
-				if not os.path.exists(args.serial) or not args.serial in devices:
-					raise SystemExit(f'Invalid serial device: {args.serial} (Available: {devices})') # Show available devices if the specified device is invalid
+	 	'''
+
+		while True:
+			try:
+				if option == 'serial':
+					if devices := findPorts():
+						if not os.path.exists(args.serial) or not args.serial in devices:
+							raise Exception(f'Invalid serial port specified: {args.serial} (Available: {devices})')
+					else:
+						raise Exception('No serial devices found')
+					self.interface = SerialInterface(value)
+
+				elif option == 'tcp':
+					self.interface = TCPInterface(value)
+
+				else:
+					raise SystemExit('Invalid interface option')
+
+			except Exception as e:
+				logging.error(f'Failed to connect to the Meshtastic interface: {e}')
+				logging.error('Retrying in 10 seconds...')
+				time.sleep(10)
+
 			else:
-				raise SystemExit('No serial devices found')
-			self.interface = SerialInterface(value)
-   
-		elif option == 'tcp':
-			self.interface = TCPInterface(value)
-
-		elif option == 'mqtt':
-			raise NotImplementedError('MQTT interface not implemented yet')
-
-		else:
-			raise SystemExit('Invalid interface option')
-
-  		logging.info(f'Connected to radio over {option} from {value}:')
-    
-		logging.debug(self.interface.nodes[self.interface.myInfo.my_node_num]) # Print the node info of the connected radio
+				self.me = self.interface.getMyNodeInfo()
+				break
 
 
-	def disconnect(self):
-		'''Disconnect from the Meshtastic interface'''
-
-		if pub.getDefaultTopicMgr().hasSubscribers(): 
-			pub.unsubAll()
-			logging.info('Unsubscribed from all Meshtastic topics')
-		else:
-			logging.warning('No Meshtastic topics to unsubscribe from')
-
-		if self.interface:
-			self.interface.close()
-			logging.info('Meshtastic interface closed')
-		else:
-			logging.warning('No Meshtastic interface to close')
-   
-		logging.info('Disconnected from radio')
-  
-  
 	def send(self, message: str):
 		'''
 		Send a message to the Meshtastic interface
@@ -105,7 +92,7 @@ class MeshtasticClient(object):
 
 		pub.subscribe(self.event_connect,    'meshtastic.connection.established')
 		pub.subscribe(self.event_disconnect, 'meshtastic.connection.lost')
-		pub.subscribe(self.event_node,       'meshtastic.node.updated')
+		pub.subscribe(self.event_node,       'meshtastic.node')
 		pub.subscribe(self.event_packet,     'meshtastic.receive')
 
 		logging.debug('Listening for Meshtastic events...')
@@ -116,7 +103,7 @@ class MeshtasticClient(object):
 		# pub.subscribe(self.on_user,      'meshtastic.receive.user')
 		# pub.subscribe(self.on_data,      'meshtastic.receive.data.portnum')
 
-		
+
 	def event_connect(self, interface, topic=pub.AUTO_TOPIC):
 		'''
 		Callback function for connection established
@@ -125,9 +112,8 @@ class MeshtasticClient(object):
 		:param topic:     PubSub topic
 		'''
 
-		me = interface.nodes[interface.myInfo.my_node_num]['user']['longName']
-  
-		logging.info(f'Connected to \'{me}\' radio')
+		logging.info(f'Connected to the {self.me["user"]["longName"]} radio on {self.me["user"]["hwModel"]} hardware')
+		logging.info(f'Found a total of {len(self.nodes):,} nodes')
 
 
 	def event_disconnect(self, interface, topic=pub.AUTO_TOPIC):
@@ -138,30 +124,26 @@ class MeshtasticClient(object):
 		:param topic:     PubSub topic
 		'''
 
-		logging.warning('Lost connection to radio')
-  
-  
-  def event_node(self, interface, topic=pub.AUTO_TOPIC):
+		logging.warning('Lost connection to radio!')
+		logging.info('Reconnecting in 10 seconds...')
+
+		time.sleep(10)
+
+		 # TODO: Consider storing the interface option and value in a class variable since we don't want to reference the args object inside the class
+		self.connect('serial' if args.serial else 'tcp', args.serial if args.serial else args.tcp)
+
+
+
+	def event_node(self, node):
 		'''
 		Callback function for node updates
 
-		:param interface: Meshtastic interface
-		:param topic:     PubSub topic
+		:param node: Node information
 		'''
 
-		if not interface.nodes:
-			logging.warning('No nodes found')
-			return
+		self.nodes[node['num']] = node
 
-		for node in interface.nodes.values():
-			short = node['user']['shortName']
-			long  = node['user']['longName'].encode('ascii', 'ignore').decode().rstrip()
-			num   = node['num']
-			id    = node['user']['id']
-			mac   = node['user']['macaddr']
-			hw    = node['user']['hwModel']
-
-			self.nodes[num] = long # we store the node updates in a dictionary so we can parse the names of who sent incomming messages
+		logging.info(f'Node found: {node["user"]["id"]} - {node["user"]["shortName"].ljust(4)} - {node["user"]["longName"]}')
 
 
 	def event_packet(self, packet: dict):
@@ -188,54 +170,38 @@ class MeshtasticClient(object):
 			else:
 				# TODO: Trigger request for node update here
 				print(f'{now()} UNK: {msg}')
-    
-    
-	def event_position(self, packet: dict):
-		'''
-		Callback function for received position packets
-
-		:param packet: Packet received
-		'''
-
-		# Handle incoming position messages
-		pass
-
-
-	
 
 
 
 if __name__ == '__main__':
-	parser = argparse.ArgumentParser(description='Meshtastic Interface')
-
-	# Interface options
-	parser.add_argument('--serial', help='Use serial interface')
-	parser.add_argument('--tcp',    help='Use TCP interface')
-	parser.add_argument('--mqtt',   help='Use MQTT interface')
-
+	parser = argparse.ArgumentParser(description='Meshtastic Interfacing Tool')
+	parser.add_argument('--serial', help='Use serial interface') # Typically /dev/ttyUSB0 or /dev/ttyACM0
+	parser.add_argument('--tcp',    help='Use TCP interface')    # Can be an IP address or hostname (meshtastic.local)
 	args = parser.parse_args()
- 
-	if not args.serial and not args.tcp and not args.mqtt:
-		raise SystemExit('No interface specified')
 
-	if (args.serial and args.tcp) or (args.serial and args.mqtt) or (args.tcp and args.mqtt):
-		raise SystemExit('Only one interface option can be specified (--serial, --tcp, or --mqtt)')
+	# Ensure one interface is specified
+	if (not args.serial and not args.tcp) or (args.serial and args.tcp):
+		raise SystemExit('Must specify either --serial or --tcp interface')
 
 	# Initialize the Meshtastic client
 	mesh = MeshtasticClient()
 
-	# Determine the interface option and value
-	option = 'serial' if args.serial else 'tcp' if args.tcp else 'mqtt'
-	value  = args.serial if args.serial else args.tcp if args.tcp else args.mqtt
+	# Listen for Meshtastic events
+	mesh.listen()
 
-	# Start the Meshtastic interface
-	mesh.connect(option, value)
+	# Connect to the Meshtastic interface
+	mesh.connect('serial' if args.serial else 'tcp', args.serial if args.serial else args.tcp)
 
 	# Keep-alive loop
 	try:
 		while True:
 			time.sleep(60)
 	except KeyboardInterrupt:
-		pass
+		pass # Exit the loop on Ctrl+C
 	finally:
-		mesh.disconnect()
+		if mesh.interface:
+			try:
+				mesh.interface.close()
+				logging.info('Connection to radio interface closed!')
+			except:
+				pass
