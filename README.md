@@ -13,6 +13,14 @@ Reading device packets over serial or TCP allows you to see the decoded data eas
 
 The goal is to experiment with the possibilities of Python as a means of interfacing with a Meshtastic device, playing with basic I/O operations, etc. My first project is going to be a relay for IRC & Meshtastic to communicate.
 
+## Links
+- [T-Deck 3D Printed Case](https://www.printables.com/model/741124-lilygo-t-deck-case)
+
+# Notes
+- T-Deck is must have Wifi turned off when going mobiel *(Unstable UI & connection)*
+- T-Deck using a custom MQTT with TLS & auth will cause a reboot loop *(Need to fix this ASAP)*
+- Add support for interfacing over MQTT with decryption support
+
 ## Updates
 - Threw in an IRC skeleton where the serial controller will interface with. Will have to consider how handle asyncronous comms over serial...
 ___
