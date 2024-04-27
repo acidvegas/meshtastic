@@ -20,9 +20,11 @@ The goal is to experiment with the possibilities of Python as a means of interfa
 - T-Deck is must have Wifi turned off when going mobiel *(Unstable UI & connection)*
 - T-Deck using a custom MQTT with TLS & auth will cause a reboot loop *(Need to fix this ASAP)*
 - Add support for interfacing over MQTT with decryption support
+- `on_node` event is called **AS** we are defining the interface, so using `self.interface` in that callback will error
 
 ## Updates
 - Threw in an IRC skeleton where the serial controller will interface with. Will have to consider how handle asyncronous comms over serial...
+- Working reconnection on disconnection!
 ___
 
 ###### Mirrors for this repository: [acid.vegas](https://git.acid.vegas/meshtastic) • [SuperNETs](https://git.supernets.org/acidvegas/meshtastic) • [GitHub](https://github.com/acidvegas/meshtastic) • [GitLab](https://gitlab.com/acidvegas/meshtastic) • [Codeberg](https://codeberg.org/acidvegas/meshtastic)
