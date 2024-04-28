@@ -1,4 +1,4 @@
-# Meshtastic
+# Meshtastic Utilities
 > Experiments with Meshtastic, MQTT, Lora, & more....
 
 ## WORK-IN-PROGRESS
@@ -25,6 +25,7 @@ The goal is to experiment with the possibilities of Python as a means of interfa
 ## Updates
 - Threw in an IRC skeleton where the serial controller will interface with. Will have to consider how handle asyncronous comms over serial...
 - Working reconnection on disconnection!
+- Most events are handled and outputted to stdout, debugging and testing finished
 ___
 
 ###### Mirrors for this repository: [acid.vegas](https://git.acid.vegas/meshtastic) • [SuperNETs](https://git.supernets.org/acidvegas/meshtastic) • [GitHub](https://github.com/acidvegas/meshtastic) • [GitLab](https://gitlab.com/acidvegas/meshtastic) • [Codeberg](https://codeberg.org/acidvegas/meshtastic)
