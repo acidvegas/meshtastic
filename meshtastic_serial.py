@@ -181,10 +181,14 @@ class MeshtasticClient(object):
 		'''
 
 		sender = packet['from']
+		to     = packet['to'] 
 		msg    = packet['decoded']['payload'].decode('utf-8')
 		id     = self.nodes[sender]['user']['id']       if sender in self.nodes else '!unk   '
 		name   = self.nodes[sender]['user']['longName'] if sender in self.nodes else 'UNK'
-		logging.info(f'{id} - {name}: {msg}')
+		target = self.nodes[to]['user']['longName']     if to     in self.nodes else 'UNK'
+
+		logging.info(f'{id} {name} -> {target}: {msg}')
+		print(packet)
 
 
 	def event_user(self, packet: dict, interface):
@@ -258,3 +262,9 @@ if __name__ == '__main__':
 	finally:
 		logging.info('Connection to radio lost')
 
+'''
+Notes:
+		conf = self.interface.localNode.localConfig
+		ok = interface.getNode('^local')
+		print(ok.channels)
+'''
