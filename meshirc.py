@@ -7,6 +7,7 @@ import logging
 import ssl
 import time
 
+# EF576MkXA3aEURbCfNn6p0FfZdua4I
 
 # Formatting Control Characters / Color Codes
 bold        = '\x02'
@@ -44,7 +45,7 @@ def color(msg: str, foreground: str, background: str = None) -> str:
 	:param foreground: The foreground color to use.
 	:param background: The background color to use.
 	'''
- 
+
 	return f'\x03{foreground},{background}{msg}{reset}' if background else f'\x03{foreground}{msg}{reset}'
 
 
@@ -63,7 +64,7 @@ class Bot():
 		:param chan: The channel to send the ACTION to.
 		:param msg: The message to send to the channel.
 		'''
-  
+
 		await self.sendmsg(chan, f'\x01ACTION {msg}\x01')
 
 
@@ -73,7 +74,7 @@ class Bot():
 
 		:param data: The raw data to send to the IRC server. (512 bytes max including crlf)
 		'''
-  
+
 		await self.writer.write(data[:510].encode('utf-8') + b'\r\n')
 
 
@@ -84,13 +85,13 @@ class Bot():
 		:param target: The target to send the PRIVMSG to. (channel or user)
 		:param msg: The message to send to the target.
 		'''
-  
+
 		await self.raw(f'PRIVMSG {target} :{msg}')
 
 
 	async def connect(self):
 		'''Connect to the IRC server.'''
-  
+
 		while True:
 			try:
 				options = {
@@ -124,7 +125,7 @@ class Bot():
 
 		:param data: The data received from the IRC server.
 		'''
-  
+
 		parts  = data.split()
 
 		ident  = parts[0][1:]
@@ -146,7 +147,7 @@ class Bot():
 						if len(message) > 255:
 							await self.sendmsg(target, color('Message exceeds 255 bytes nerd!', red))
 						# TODO: Send a meshtastic message (We have to ensure our outbounds from IRC don't loop back into IRC)
-						
+
 					self.last = time.time() # Update the last command time if it starts with ! character to prevent command flooding
 
 
@@ -156,9 +157,9 @@ class Bot():
 
 		:param data: The data received from the IRC server.
 		'''
-  
+
 		logging.info(data)
-  
+
 		try:
 			parts = data.split()
 
@@ -207,7 +208,7 @@ if __name__ == '__main__':
 	parser.add_argument('--ssl', action='store_true', help='Use SSL for the connection.')
 	parser.add_argument('--key',  default='', help='The key (password) for the IRC channel, if required.')
 	args = parser.parse_args()
- 
+
 	if not args.channel.startswith('#'):
 		channel = '#' + args.channel
 

@@ -17,24 +17,18 @@ except ImportError:
 try:
 	from pubsub import pub
 except ImportError:
-	raise ImportError('pubsub library not found (pip install pypubsub)') # Confirm this Pypi package name...
+	raise ImportError('pubsub library not found (pip install pypubsub)')
 
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)9s | %(funcName)s | %(message)s', datefmt='%Y-%m-%d %I:%M:%S')
 
 
-def now():
-	'''Returns the current date and time in a formatted string'''
-
-	return time.strftime('%Y-%m-%d %H:%M:%S')
-
-
 class MeshtasticClient(object):
 	def __init__(self):
-		self.interface = None # We will define the interface in the connect() function
-		self.me        = {}   # We will populate this with the event_connect() callback
-		self.nodes     = {}   # Nodes will populate with the event_node() callback
+		self.interface = None
+		self.me        = {} 
+		self.nodes     = {}
 
 
 	def connect(self, option: str, value: str):
@@ -71,7 +65,7 @@ class MeshtasticClient(object):
 				break
 
 
-	def send(self, message: str):
+	def sendmsg(self, message: str, destination: int, channelIndex: int = 0):
 		'''
 		Send a message to the Meshtastic interface
 
@@ -82,7 +76,7 @@ class MeshtasticClient(object):
 			logging.warning('Message exceeds 255 characters')
 			message = message[:255]
 
-		self.interface.sendText(message)
+		self.interface.sendText(message, destination, wantAck=True, channelIndex=channelIndex) # Do we need wantAck?
 
 		logging.info(f'Sent broadcast message: {message}')
 
@@ -121,7 +115,7 @@ class MeshtasticClient(object):
 		:param interface: Meshtastic interface
 		'''
 
-		logging.info(f'Data update: {data}')
+		logging.info(f'Data update: {packet}')
 
 
 	def event_disconnect(self, interface, topic=pub.AUTO_TOPIC):
@@ -149,7 +143,7 @@ class MeshtasticClient(object):
 
 		self.nodes[node['num']] = node
 
-		logging.info(f'Node found: {node["user"]["id"]} - {node["user"]["shortName"].ljust(4)} - {node["user"]["longName"]}')
+		logging.info(f'Node recieved: {node["user"]["id"]} - {node["user"]["shortName"].ljust(4)} - {node["user"]["longName"]}')
 
 
 	def event_position(self, packet: dict, interface):
@@ -161,7 +155,7 @@ class MeshtasticClient(object):
 		'''
 
 		sender    = packet['from']
-		msg       = packet['decoded']['payload'].hex()
+		msg       = packet['decoded']['payload'].hex() # What exactly is contained in this payload?
 		id        = self.nodes[sender]['user']['id']       if sender in self.nodes else '!unk   '
 		name      = self.nodes[sender]['user']['longName'] if sender in self.nodes else 'UNK'
 		longitude = packet['decoded']['position']['longitudeI'] / 1e7
@@ -170,7 +164,7 @@ class MeshtasticClient(object):
 		snr	      = packet['rxSnr']
 		rssi	  = packet['rxRssi']
 
-		logging.info(f'{id} - {name}: {longitude}, {latitude}, {altitude}m (SNR: {snr}, RSSI: {rssi}) - {msg}')
+		logging.info(f'Position recieved: {id} - {name}: {longitude}, {latitude}, {altitude}m (SNR: {snr}, RSSI: {rssi}) - {msg}')
 
 
 	def event_text(self, packet: dict, interface):
@@ -187,7 +181,7 @@ class MeshtasticClient(object):
 		name   = self.nodes[sender]['user']['longName'] if sender in self.nodes else 'UNK'
 		target = self.nodes[to]['user']['longName']     if to     in self.nodes else 'UNK'
 
-		logging.info(f'{id} {name} -> {target}: {msg}')
+		logging.info(f'Message recieved: {id} {name} -> {target}: {msg}')
 		print(packet)
 
 

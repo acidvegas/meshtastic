@@ -10,6 +10,8 @@ The goal here is to create simple & clean modules to interface with the hardware
 
 The hardware I am experimenting with: [Lilygo T-Deck](https://www.lilygo.cc/products/t-deck), [Lilygo T-Beam](https://www.lilygo.cc/products/t-beam-v1-1-esp32-lora-module), [Heltec Lora 32 v3](https://heltec.org/project/wifi-lora-32-v3/), and [RAK Wireless 4631](https://store.rakwireless.com/products/wisblock-core-modules?variant=42440631419078)
 
+## Notes to self & developers
+- The node id formula is: f'!{hex(node_num)[2:]}'
 
 ## Hardware & Software related Issues
 - T-Deck must have Wifi turned off when going mobile. Upon leaving my house with WiFi still enabled, the UI & connection was EXTREMELY laggy & poor. Couldn't even type well...
