@@ -28,7 +28,6 @@
 
 As far as I know, at the time of writing this, the onyl way to change the Ringtone is from the App...
 
-
  ## Compile & flash firmware
  - Select `PlatformIO: Pick Project Environment` & select your board.
  - Run `PLatformIO: Build` to compile the firmware.

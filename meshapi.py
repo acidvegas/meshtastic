@@ -8,9 +8,6 @@ import time
 
 try:
 	import meshtastic
-	from meshtastic.serial_interface import SerialInterface
-	from meshtastic.util             import findPorts
-	from meshtastic.tcp_interface    import TCPInterface		
 except ImportError:
 	raise ImportError('meshtastic library not found (pip install meshtastic)')
 
@@ -24,11 +21,26 @@ except ImportError:
 logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)9s | %(funcName)s | %(message)s', datefmt='%Y-%m-%d %I:%M:%S')
 
 
+def now():
+	'''Returns the current date and time in a formatted string'''
+
+	return time.strftime('%Y-%m-%d %H:%M:%S')
+
+
 class MeshtasticClient(object):
-	def __init__(self):
+	def __init__(self, option: str, value: str):
 		self.interface = None
-		self.me        = {} 
+		self.me        = {}
 		self.nodes     = {}
+
+		self.interface_option = option
+		self.interface_value  = value
+
+		if self.interface_option == 'serial':
+			from meshtastic.serial_interface import SerialInterface as MeshInterface
+			from meshtastic.util import findPorts
+		elif self.interface_option == 'tcp':
+			from meshtastic.tcp_interface import TCPInterface as MeshInterface
 
 
 	def connect(self, option: str, value: str):
@@ -56,16 +68,16 @@ class MeshtasticClient(object):
 					raise SystemExit('Invalid interface option')
 
 			except Exception as e:
-				logging.error(f'Failed to connect to the Meshtastic interface: {e}')
-				logging.error('Retrying in 10 seconds...')
-				time.sleep(10)
+				logging.error(f'Failed to connect to the radio: {e}')
+				logging.error('Retrying in 15 seconds...')
+				time.sleep(15)
 
 			else:
 				self.me = self.interface.getMyNodeInfo()
 				break
 
 
-	def sendmsg(self, message: str, destination: int, channelIndex: int = 0):
+	def send(self, message: str):
 		'''
 		Send a message to the Meshtastic interface
 
@@ -76,7 +88,7 @@ class MeshtasticClient(object):
 			logging.warning('Message exceeds 255 characters')
 			message = message[:255]
 
-		self.interface.sendText(message, destination, wantAck=True, channelIndex=channelIndex) # Do we need wantAck?
+		self.interface.sendText(message)
 
 		logging.info(f'Sent broadcast message: {message}')
 
@@ -115,7 +127,7 @@ class MeshtasticClient(object):
 		:param interface: Meshtastic interface
 		'''
 
-		logging.info(f'Data update: {packet}')
+		logging.info(f'Data update: {data}')
 
 
 	def event_disconnect(self, interface, topic=pub.AUTO_TOPIC):
@@ -141,9 +153,12 @@ class MeshtasticClient(object):
 		:param node: Node information
 		'''
 
+		# Node ID Formula = f'!{hex(node_num)[2:]}'
+
 		self.nodes[node['num']] = node
 
-		logging.info(f'Node recieved: {node["user"]["id"]} - {node["user"]["shortName"].ljust(4)} - {node["user"]["longName"]}')
+		logging.info(f'Node found: {node["user"]["id"]} - {node["user"]["shortName"].ljust(4)} - {node["user"]["longName"]}')
+		print(node)
 
 
 	def event_position(self, packet: dict, interface):
@@ -155,7 +170,7 @@ class MeshtasticClient(object):
 		'''
 
 		sender    = packet['from']
-		msg       = packet['decoded']['payload'].hex() # What exactly is contained in this payload?
+		msg       = packet['decoded']['payload'].hex()
 		id        = self.nodes[sender]['user']['id']       if sender in self.nodes else '!unk   '
 		name      = self.nodes[sender]['user']['longName'] if sender in self.nodes else 'UNK'
 		longitude = packet['decoded']['position']['longitudeI'] / 1e7
@@ -164,7 +179,7 @@ class MeshtasticClient(object):
 		snr	      = packet['rxSnr']
 		rssi	  = packet['rxRssi']
 
-		logging.info(f'Position recieved: {id} - {name}: {longitude}, {latitude}, {altitude}m (SNR: {snr}, RSSI: {rssi}) - {msg}')
+		logging.info(f'{id} - {name}: {longitude}, {latitude}, {altitude}m (SNR: {snr}, RSSI: {rssi}) - {msg}')
 
 
 	def event_text(self, packet: dict, interface):
@@ -181,7 +196,7 @@ class MeshtasticClient(object):
 		name   = self.nodes[sender]['user']['longName'] if sender in self.nodes else 'UNK'
 		target = self.nodes[to]['user']['longName']     if to     in self.nodes else 'UNK'
 
-		logging.info(f'Message recieved: {id} {name} -> {target}: {msg}')
+		logging.info(f'{id} {name} -> {target}: {msg}')
 		print(packet)
 
 
