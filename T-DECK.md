@@ -1,5 +1,7 @@
 # LilyGo T-Deck Notes
 
+![](.screens/htpdeck.png)
+
 ## Parts
 - [T-Deck](https://www.lilygo.cc/products/t-deck)
 - [Case](https://www.printables.com/model/741124-lilygo-t-deck-case) *(You can 3D print it yourself, or follow the Etsy link on here to buy one)*
@@ -13,6 +15,10 @@
 The T-Deck has a grove connector for the GPS. Personally, I do not use a grove connector for mine, I removed the Grove input and soldered directly to the board.
 
 **WARNING**: Be careful taking off the grove! Snip the front points, and then use a soldering iron to loosen the metal on the 4 contact back points. You can VERY easily pull the solder pads right off if you just try to rip the grove connector off without loosening the solder points. If you pull off a solder pad, you're pretty much boned on having a GPS module.
+
+![](.screens/solder_pads_lol.png)
+
+*Above: Picture of solder pads accidentally pulled off lol...*
 
 You will see VCC, GND, RX & TX points on both the T-Deck & the GPS. Solder wires to match these points, but switch RX & TX. So do VCC to VCC, GND to GND, and then ensure that RX is soldered to TX, and TX is soldered to RX. It's confusing, I know, but that's China based hardware for you...
 
