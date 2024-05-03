@@ -18,6 +18,17 @@ meshtastic --set-owner 'CHANGEME' --set-owner-short 'CHNG'
 meshtastic --set lora.region US 
 ```
 
+###### GPS
+```
+meshtastic --set position.gps_enabled true
+```
+
+or for a fixed position...
+
+```
+meshtastic --set position.fixed_position true --setlat 37.8651 --setlon -119.5383
+```
+
 ###### CHANNEL
 ```
 meshtastic --ch-set name "SUPERNETS" --ch-set psk "CHANGEME" --ch-set uplink_enabled true --ch-set downlink_enabled true --ch-index 0
