@@ -21,7 +21,7 @@
 ###### Custom screen color
  - Navigate to `src/graphics/TFTDisplay.cpp`
 
- - Find & replace `#define TFT_MESH COLOR565(0x67, 0xEA, 0x94)` with your custom color.
+ - Find & replace `#define TFT_MESH COLOR565(0xFF, 0x00, 0x00)` with your custom color. *(The one shown here is for RED mode >:))*
 
  ###### Custom alert sound (for T-Deck & devices with a buzzer)
  - From the mobile app, click the 3 dots on the top right, and select `Radio configuration`

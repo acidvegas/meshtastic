@@ -13,8 +13,9 @@ The hardware I am experimenting with: [Lilygo T-Deck](https://www.lilygo.cc/prod
 - [Setup Hardware](./SETUP.md)
 
 ## Bugs & Issues
-- T-Deck must have Wifi turned off when going mobile. Upon leaving my house with WiFi still enabled, the UI & connection was EXTREMELY laggy & poor. Couldn't even type well...
-- T-Deck using a custom MQTT with TLS & auth will cause a reboot loop *(Need to fix this ASAP)*
+- Devices must have Wifi turned off when going mobile. Upon leaving my house with WiFi still enabled, the UI & connection was EXTREMELY laggy & poor. Couldn't even type well...
+- Devices using a custom MQTT with TLS & auth will cause a reboot loop *(Need to fix this ASAP)*
+- A fix for the reboot loop is simply disabling MQTT over serial with `meshtastic --set mqtt.enabled false`
 - `event_node` event is called **AS** we are defining the interface, so using `self.interface` in that callback will error.
 
 ## Roadmap

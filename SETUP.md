@@ -29,6 +29,11 @@ or for a fixed position...
 meshtastic --set position.fixed_position true --setlat 37.8651 --setlon -119.5383
 ```
 
+###### POWER
+```
+meshtastic --set power.is_power_saving false
+```
+
 ###### CHANNEL
 ```
 meshtastic --ch-set name "SUPERNETS" --ch-set psk "CHANGEME" --ch-set uplink_enabled true --ch-set downlink_enabled true --ch-index 0
