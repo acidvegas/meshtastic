@@ -7,7 +7,7 @@ import logging
 import ssl
 import time
 
-# EF576MkXA3aEURbCfNn6p0FfZdua4I
+# 0xEF576MkXA3aEURbCfNn6p0FfZdua4I
 
 # Formatting Control Characters / Color Codes
 bold        = '\x02'

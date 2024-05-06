@@ -46,7 +46,7 @@ meshtastic --set network.wifi_enabled true --set network.wifi_ssid "CHANGEME" --
 
 ###### MQTT
 ```
-meshtastic --set mqtt.enabled true --set mqtt.address "CHANGEME" --set mqtt.username "CHANGEME" --set mqtt.password "CHANGEME" --set mqtt.tls_enabled true --set mqtt.root "msh/CHANGEME" --set mqtt.encryption_enabled true
+meshtastic --set mqtt.enabled true --set mqtt.address changeme --set mqtt.username changeme --set mqtt.password changeme --set mqtt.encryption_enabled true --set mqtt.tls_enabled false --set mqtt.root msh --set mqtt.map_reporting_enabled true --set mqtt.json_enabled true
 ```
 
 ###### BLUETOOTH
