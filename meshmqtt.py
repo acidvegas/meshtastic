@@ -22,15 +22,8 @@ except ImportError:
 	raise SystemExit('missing the paho-mqtt module (pip install paho-mqtt)')
 
 
-def process_message(message_packet, text_payload, is_encrypted):
-
-	text = {
-		'message': text_payload,
-		'from': getattr(message_packet, 'from'),
-		'id': getattr(message_packet, 'id'),
-		'to': getattr(message_packet, 'to')
-	}
-	print(text)
+# Initialize the logging module
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %I:%M:%S')
 
 
 def decode_encrypted(message_packet):
@@ -57,51 +50,35 @@ def decode_encrypted(message_packet):
 
 		if message_packet.decoded.portnum == portnums_pb2.TEXT_MESSAGE_APP:
 			text_payload = message_packet.decoded.payload.decode('utf-8')
-			is_encrypted = True
-			process_message(message_packet, text_payload, is_encrypted)
-			print(f'{text_payload}')
-
+			text = {
+				'message' : text_payload,
+				'from'    : getattr(message_packet, 'from'),
+				'id'      : getattr(message_packet, 'id'),
+				'to'      : getattr(message_packet, 'to')
+			}
+			logging.info('Received text message:')
+			logging.info(text)
 
 		elif message_packet.decoded.portnum == portnums_pb2.NODEINFO_APP:
 				info = mesh_pb2.User()
 				info.ParseFromString(message_packet.decoded.payload)
-				print(info)
+				logging.info('Received node info:')
+				logging.info(info)
 
 		elif message_packet.decoded.portnum == portnums_pb2.POSITION_APP:
 			pos = mesh_pb2.Position()
 			pos.ParseFromString(message_packet.decoded.payload)
-			print(pos)
+			logging.info('Received position:')
+			logging.info(pos)
 
 		elif message_packet.decoded.portnum == portnums_pb2.TELEMETRY_APP:
 			env = telemetry_pb2.Telemetry()
 			env.ParseFromString(message_packet.decoded.payload)
-			print(env)
+			logging.info('Received telemetry:')
+			logging.info(env)
 
 	except Exception as e:
 		logging.error(f'Failed to decrypt message: {str(e)}')
-
-
-def encrypt_message(channel, key, mesh_packet, encoded_message):
-    '''
-    Encrypt a message packet.
-    
-    :param channel: The channel to encrypt the message for
-    :param key: The encryption key
-    :param mesh_packet: The mesh packet to encrypt
-    :param encoded_message: The encoded message to encrypt
-    '''
-    
-    mesh_packet.channel = generate_hash(channel, key)
-    key_bytes = base64.b64decode(key.encode('ascii'))
-    nonce_packet_id = mesh_packet.id.to_bytes(8, "little")
-    nonce_from_node = node_number.to_bytes(8, "little")
-    nonce = nonce_packet_id + nonce_from_node
-
-    cipher = Cipher(algorithms.AES(key_bytes), modes.CTR(nonce), backend=default_backend())
-    encryptor = cipher.encryptor()
-    encrypted_bytes = encryptor.update(encoded_message.SerializeToString()) + encryptor.finalize()
-
-    return encrypted_bytes
 
 
 def on_connect(client, userdata, flags, rc, properties):
@@ -116,7 +93,7 @@ def on_connect(client, userdata, flags, rc, properties):
 	'''
 
 	if rc == 0:
-		print('Connected to MQTT broker')
+		logging.info('Connected to MQTT broker')
 	else:
 		logging.error(f'Failed to connect to MQTT broker: {rc}')
 
@@ -129,22 +106,23 @@ def on_message(client, userdata, msg):
 	:param userdata: The private user data as set in Client() or user_data_set()
 	:param msg: An instance of MQTTMessage. This is a
 	'''
-
-	print(f'{msg.topic}: {msg.payload}')
-
+	
 	service_envelope = mqtt_pb2.ServiceEnvelope()
 
 	try:
 		service_envelope.ParseFromString(msg.payload)
-		print(service_envelope)
+		logging.info('Received a packet:')
+		logging.info(service_envelope)
 		message_packet = service_envelope.packet
-		print(message_packet)
 	except Exception as e:
 		#logging.error(f'Failed to parse message: {str(e)}')
 		return
 
 	if message_packet.HasField('encrypted') and not message_packet.HasField('decoded'):
 		decode_encrypted(message_packet)
+	else:
+		logging.warning('Received an unencrypted message')
+		logging.info(f'Payload: {message_packet}')
 
 
 def on_subscribe(client, userdata, mid, reason_code_list, properties):
@@ -158,12 +136,11 @@ def on_subscribe(client, userdata, mid, reason_code_list, properties):
 	:param properties: The properties returned by the broker
 	'''
 
-	# Since we subscribed only for a single channel, reason_code_list contains
-	# a single entry
+	# Since we subscribed only for a single channel, reason_code_list contains a single entry
 	if reason_code_list[0].is_failure:
-		print(f"Broker rejected you subscription: {reason_code_list[0]}")
+		logging.error(f'Broker rejected you subscription: {reason_code_list[0]}')
 	else:
-		print(f"Broker granted the following QoS: {reason_code_list[0].value}")
+		logging.info(f'Broker granted the following QoS: {reason_code_list[0].value}')
 
 
 def on_unsubscribe(client, userdata, mid, reason_code_list, properties):
@@ -180,9 +157,9 @@ def on_unsubscribe(client, userdata, mid, reason_code_list, properties):
 	# Be careful, the reason_code_list is only present in MQTTv5.
 	# In MQTTv3 it will always be empty
 	if len(reason_code_list) == 0 or not reason_code_list[0].is_failure:
-		print("unsubscribe succeeded (if SUBACK is received in MQTTv3 it success)")
+		logging.info('Broker accepted the unsubscription(s)')
 	else:
-		print(f"Broker replied with failure: {reason_code_list[0]}")
+		logging.error(f'Broker replied with failure: {reason_code_list[0]}')
 	client.disconnect()
 
 
