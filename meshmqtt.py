@@ -64,11 +64,11 @@ def decode_encrypted(message_packet):
 			}
 			logging.info('Received text message:')
 			logging.info(text)
-   
+
 		elif message_packet.decoded.portnum == portnums_pb2.MAP_REPORT_APP:
-            pos = mesh_pb2.Position()
-            pos.ParseFromString(message_packet.decoded.payload)
-            logging.info('Received map report:')
+			pos = mesh_pb2.Position()
+			pos.ParseFromString(message_packet.decoded.payload)
+			logging.info('Received map report:')
 			logging.info(pos)
 
 		elif message_packet.decoded.portnum == portnums_pb2.NODEINFO_APP:
