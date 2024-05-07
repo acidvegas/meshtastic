@@ -4,23 +4,28 @@ This repository serves as a collection of resources created in my journey to lea
 
 The goal here is to create simple & clean modules to interface with the hardware in a way that can be used to expand the possibilities of the devices capabilities.
 
-The hardware I am experimenting with: [Lilygo T-Deck](https://www.lilygo.cc/products/t-deck), [Lilygo T-Beam](https://www.lilygo.cc/products/t-beam-v1-1-esp32-lora-module), [Heltec Lora 32 v3](https://heltec.org/project/wifi-lora-32-v3/), and [RAK Wireless 4631](https://store.rakwireless.com/products/wisblock-core-modules?variant=42440631419078)
-
 ![](.screens/htpdeck.png)
 
 ## Documentation
-- [Firmware Hacks & Customization](./FIRMWARE.md)
+- [Hardware Options](./docs/HARDWARE.md)
 - [Setup Hardware](./SETUP.md)
+- [Setup a T-Deck](./docs/T-DECK.md)
+- [Firmware Hacks & Customization](./docs/FIRMWARE.md)
+- [MQTT Notes](./docs/MQTT.md)
+
+## Code
+- [Meshtastic Serial/TCP Interface](./meshapi.py)
+- [Meshtastic MQTT Interface](./meshmqtt.py)
+- [Meshtastic IRC Relay / Bridge](./meshirc.py)
 
 ## Bugs & Issues
 - Devices must have Wifi turned off when going mobile. Upon leaving my house with WiFi still enabled, the UI & connection was EXTREMELY laggy & poor. Couldn't even type well...
 - Devices using a MQTT with TLS will reboot loop.
-- A fix for the reboot loop is simply disabling MQTT over serial with `meshtastic --set mqtt.enabled false`
-- `event_node` event is called **AS** we are defining the interface, so using `self.interface` in that callback will error.
+- A fix for the reboot loop is simply disabling MQTT over serial with `meshtastic --set mqtt.tls_enabled false`
+- Enabling JSON with MQTT causes messages to not be encrypted in the MQTT server..
 
 ## Roadmap
 - Asyncronous meshtastic interface
-- MQTT interface with working decryption
 - Documentation on MQTT bridging for high availability
 - Bridge for IRC to allow channel messages to relay over Meshtastic & all Meshtastic events to relay into IRC. *(IRC to Meshtastic will require a command like `!mesh <message here>` to avoid overloading the traffic over LoRa)*
 

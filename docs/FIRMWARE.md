@@ -13,6 +13,8 @@
 
 - The data from this goes in `firmware/src/graphics/img/icon.xbm`
 
+You can use the provided [icon.xbm](../assets/icon.xbm) for a rad GTA:SA fist to show up on boot.
+
 ###### Custom boot message
 - Navigate to `firmware/src/graphics/Screen.cpp`
 

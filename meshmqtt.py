@@ -209,8 +209,9 @@ if __name__ == '__main__':
 	# Enable TLS/SSL if the --tls flag is set
 	if args.tls:
 		import ssl
-		client.tls_set(cert_reqs=ssl.CERT_REQUIRED, tls_version=ssl.PROTOCOL_TLSv1_2)
-		client.tls_insecure_set(False)
+		client.tls_set()
+		#client.tls_set(cert_reqs=ssl.CERT_REQUIRED, tls_version=ssl.PROTOCOL_TLSv1_2)
+		#client.tls_insecure_set(False)
 
 	# Set the callbacks
 	client.on_connect     = on_connect

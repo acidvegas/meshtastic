@@ -1,3 +1,6 @@
+# Meshtastic MQTT
+> Work in progress still, come back later...
+
 ###### default.conf
 ```
 # Insecure
