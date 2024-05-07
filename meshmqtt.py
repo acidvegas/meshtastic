@@ -47,22 +47,31 @@ class MeshtasticMQTT(object):
 		:param key:      The encryption key
 		'''
 
+		# Initialize the MQTT client (these arguments were the only way to get it to work properly..)
 		client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id='', clean_session=True, userdata=None)
+
+		# Set the username and password for the MQTT broker
 		client.username_pw_set(username=username, password=password)
 
+		# Set the encryption key global in the client class (the default key is padded to ensure it's the correct length for AES)
 		self.key = '1PG7OiApB1nwvP+rz05pAQ==' if key == 'AQ==' else key
 
+		# Enable TLS/SSL if the user specified it
 		if tls:
 			client.tls_set()
 			#client.tls_insecure_set(False)
 
+		# Set the MQTT callbacks
 		client.on_connect     = self.on_connect
 		client.on_message     = self.on_message
 		client.on_subscribe   = self.on_subscribe
 		client.on_unsubscribe = self.on_unsubscribe
 
+		# Connect to the MQTT broker and subscribe to the root topic
 		client.connect(broker, port, 60)
 		client.subscribe(root, 0)
+
+		# Keep-alive loop
 		client.loop_forever()
 
 
@@ -129,12 +138,8 @@ class MeshtasticMQTT(object):
 			# Parse the message payload
 			service_envelope.ParseFromString(msg.payload)
 
-#			logging.info('Received a packet:')
-#			logging.info(service_envelope)
-
 			# Extract the message packet from the service envelope
 			message_packet = service_envelope.packet
-
 		except Exception as e:
 			#logging.error(f'Failed to parse message: {str(e)}')
 			return
@@ -143,7 +148,11 @@ class MeshtasticMQTT(object):
 		if message_packet.HasField('encrypted') and not message_packet.HasField('decoded'):
 			message_packet = self.decrypt_message_packet(message_packet)
 
-			if message_packet.decoded.portnum == portnums_pb2.TEXT_MESSAGE_APP:
+			if message_packet.decoded.portnum == portnums_pb2.UNKNOWN_APP:
+				logging.warning('Received an unknown app message:')
+				logging.info(message_packet)
+
+			elif message_packet.decoded.portnum == portnums_pb2.TEXT_MESSAGE_APP:
 				text_payload = message_packet.decoded.payload.decode('utf-8')
 				text = {
 					'message' : text_payload,
@@ -154,31 +163,113 @@ class MeshtasticMQTT(object):
 				logging.info('Received text message:')
 				logging.info(text)
 
-			#h = [portnums_pb2.REMOTE_HARDWARE_APP, portnums_pb2.ROUTING_APP, 
-
-			elif message_packet.decoded.portnum == portnums_pb2.MAP_REPORT_APP: # comes unencrypted
-				pos = mesh_pb2.Position()
-				pos.ParseFromString(message_packet.decoded.payload)
-				logging.info('Received map report:')
-				logging.info(pos)
-
-			elif message_packet.decoded.portnum == portnums_pb2.NODEINFO_APP:
-				info = mesh_pb2.User()
-				info.ParseFromString(message_packet.decoded.payload)
-				logging.info('Received node info:')
-				logging.info(info)
+			elif message_packet.decoded.portnum == portnums_pb2.REMOTE_HARDWARE_APP:
+				data = mesh_pb2.RemoteHardware()
+				data.ParseFromString(message_packet.decoded.payload)
+				logging.info('Received remote hardware:')
+				logging.info(data)
 
 			elif message_packet.decoded.portnum == portnums_pb2.POSITION_APP:
-				pos = mesh_pb2.Position()
-				pos.ParseFromString(message_packet.decoded.payload)
+				data = mesh_pb2.Position()
+				data.ParseFromString(message_packet.decoded.payload)
 				logging.info('Received position:')
-				logging.info(pos)
+				logging.info(data)
+
+			elif message_packet.decoded.portnum == portnums_pb2.NODEINFO_APP:
+				data = mesh_pb2.NodeInfo()
+				data.ParseFromString(message_packet.decoded.payload)
+				logging.info('Received node info:')
+				logging.info(data)
+
+			elif message_packet.decoded.portnum == portnums_pb2.ROUTING_APP:
+				data = mesh_pb2.Routing()
+				data.ParseFromString(message_packet.decoded.payload)
+				logging.info('Received routing:')
+				logging.info(data)
+
+			elif message_packet.decoded.portnum == portnums_pb2.ADMIN_APP:
+				data = mesh_pb2.Admin()
+				data.ParseFromString(message_packet.decoded.payload)
+				logging.info('Received admin:')
+				logging.info(data)
+
+			elif message_packet.decoded.portnum == portnums_pb2.TEXT_MESSAGE_COMPRESSED_APP:
+				data = mesh_pb2.TextMessageCompressed()
+				data.ParseFromString(message_packet.decoded.payload)
+				logging.info('Received compressed text message:')
+				logging.info(data)
+
+			elif message_packet.decoded.portnum == portnums_pb2.WAYPOINT_APP:
+				data = mesh_pb2.Waypoint()
+				data.ParseFromString(message_packet.decoded.payload)
+				logging.info('Received waypoint:')
+				logging.info(data)
+
+			elif message_packet.decoded.portnum == portnums_pb2.AUDIO_APP:
+				data = mesh_pb2.Audio()
+				data.ParseFromString(message_packet.decoded.payload)
+				logging.info('Received audio:')
+				logging.info(data)
+
+			elif message_packet.decoded.portnum == portnums_pb2.DETECTION_SENSOR_APP:
+				data = mesh_pb2.DetectionSensor()
+				data.ParseFromString(message_packet.decoded.payload)
+				logging.info('Received detection sensor:')
+				logging.info(data)
+
+			elif message_packet.decoded.portnum == portnums_pb2.REPLY_APP:
+				data = mesh_pb2.Reply()
+				data.ParseFromString(message_packet.decoded.payload)
+				logging.info('Received reply:')
+				logging.info(data)
+
+			elif message_packet.decoded.portnum == portnums_pb2.IP_TUNNEL_APP:
+				data = mesh_pb2.IPTunnel()
+				data.ParseFromString(message_packet.decoded.payload)
+				logging.info('Received IP tunnel:')
+				logging.info(data)
+
+			elif message_packet.decoded.portnum == portnums_pb2.PAXCOUNTER_APP:
+				data = mesh_pb2.Paxcounter()
+				data.ParseFromString(message_packet.decoded.payload)
+				logging.info('Received paxcounter:')
+				logging.info(data)
+
+			elif message_packet.decoded.portnum == portnums_pb2.SERIAL_APP:
+				data = mesh_pb2.Serial()
+				data.ParseFromString(message_packet.decoded.payload)
+				logging.info('Received serial:')
+				logging.info(data)
+
+			elif message_packet.decoded.portnum == portnums_pb2.STORE_FORWARD_APP:
+				data = mesh_pb2.StoreForward()
+				data.ParseFromString(message_packet.decoded.payload)
+				logging.info('Received store and forward:')
+				logging.info(data)
+
+			elif message_packet.decoded.portnum == portnums_pb2.RANGE_TEST_APP:
+				data = mesh_pb2.RangeTest()
+				data.ParseFromString(message_packet.decoded.payload)
+				logging.info('Received range test:')
+				logging.info(data)
 
 			elif message_packet.decoded.portnum == portnums_pb2.TELEMETRY_APP:
-				env = telemetry_pb2.Telemetry()
-				env.ParseFromString(message_packet.decoded.payload)
+				data = telemetry_pb2.Telemetry()
+				data.ParseFromString(message_packet.decoded.payload)
 				logging.info('Received telemetry:')
-				logging.info(env)
+				logging.info(data)
+
+			elif message_packet.decoded.portnum == portnums_pb2.ZPS_APP:
+				data = mesh_pb2.Zps()
+				data.ParseFromString(message_packet.decoded.payload)
+				logging.info('Received ZPS:')
+				logging.info(data)
+
+			elif message_packet.decoded.portnum == portnums_pb2.SIMULATOR_APP:
+				data = mesh_pb2.Simulator()
+				data.ParseFromString(message_packet.decoded.payload)
+				logging.info('Received simulator:')
+				logging.info(data)
 
 			elif message_packet.decoded.portnum == portnums_pb2.TRACEROUTE_APP:
 				routeDiscovery = mesh_pb2.RouteDiscovery()
@@ -186,14 +277,44 @@ class MeshtasticMQTT(object):
 				logging.info('Received traceroute:')
 				logging.info(routeDiscovery)
 
+			elif message_packet.decoded.portnum == portnums_pb2.NEIGHBORINFO_APP:
+				neighborInfo = mesh_pb2.NeighborInfo()
+				neighborInfo.ParseFromString(message_packet.decoded.payload)
+				logging.info('Received neighbor info:')
+				logging.info(neighborInfo)
+
+			elif message_packet.decoded.portnum == portnums_pb2.ATAK_PLUGIN:
+				data = mesh_pb2.AtakPlugin()
+				data.ParseFromString(message_packet.decoded.payload)
+				logging.info('Received ATAK plugin:')
+				logging.info(data)
+
+			elif message_packet.decoded.portnum == portnums_pb2.PRIVATE_APP:
+				data = mesh_pb2.Private()
+				data.ParseFromString(message_packet.decoded.payload)
+				logging.info('Received private:')
+				logging.info(data)
+
+			elif message_packet.decoded.portnum == portnums_pb2.ATAK_FORWARDER:
+				data = mesh_pb2.AtakForwarder()
+				data.ParseFromString(message_packet.decoded.payload)
+				logging.info('Received ATAK forwarder:')
+				logging.info(data)
+
 			else:
 				logging.warning('Received an unknown message:')
 				logging.info(message_packet)
 
-		# If the message is not encrypted, log the payload (this should not happen)
+		# Unencrypted messages
 		else:
-			logging.warning('Received an unencrypted message')
-			logging.info(f'Payload: {message_packet}')
+			if message_packet.decoded.portnum == portnums_pb2.MAP_REPORT_APP:
+				pos = mesh_pb2.Position()
+				pos.ParseFromString(message_packet.decoded.payload)
+				logging.info('Received map report:')
+				logging.info(pos)
+			else:
+				logging.warning('Received an unencrypted message')
+				logging.info(f'Payload: {message_packet}')
 
 
 	def on_subscribe(self, client, userdata, mid, reason_code_list, properties):
