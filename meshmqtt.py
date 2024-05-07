@@ -154,7 +154,7 @@ class MeshtasticMQTT(object):
 				logging.info('Received text message:')
 				logging.info(text)
 
-			h = [portnums_pb2.REMOTE_HARDWARE_APP, portnums_pb2.ROUTING_APP, 
+			#h = [portnums_pb2.REMOTE_HARDWARE_APP, portnums_pb2.ROUTING_APP, 
 
 			elif message_packet.decoded.portnum == portnums_pb2.MAP_REPORT_APP: # comes unencrypted
 				pos = mesh_pb2.Position()
