@@ -33,17 +33,23 @@ def decode_encrypted(message_packet):
 	:param message_packet: The message packet to decrypt
  	'''
 
-	try:
+	try: 
+		# Ensure the key is formatted and padded correctly before turning it into bytes
+		padded_key = args.key.ljust(len(args.key) + ((4 - (len(args.key) % 4)) % 4), '=')
+		key = padded_key.replace('-', '+').replace('_', '/')
 		key_bytes = base64.b64decode(key.encode('ascii'))
-
+  
+		# Extract the nonce from the packet
 		nonce_packet_id = getattr(message_packet, 'id').to_bytes(8, 'little')
 		nonce_from_node = getattr(message_packet, 'from').to_bytes(8, 'little')
 		nonce = nonce_packet_id + nonce_from_node
 
+		# Decrypt the message
 		cipher = Cipher(algorithms.AES(key_bytes), modes.CTR(nonce), backend=default_backend())
 		decryptor = cipher.decryptor()
 		decrypted_bytes = decryptor.update(getattr(message_packet, 'encrypted')) + decryptor.finalize()
 
+		# Parse the decrypted message
 		data = mesh_pb2.Data()
 		data.ParseFromString(decrypted_bytes)
 		message_packet.decoded.CopyFrom(data)
@@ -60,10 +66,10 @@ def decode_encrypted(message_packet):
 			logging.info(text)
 
 		elif message_packet.decoded.portnum == portnums_pb2.NODEINFO_APP:
-				info = mesh_pb2.User()
-				info.ParseFromString(message_packet.decoded.payload)
-				logging.info('Received node info:')
-				logging.info(info)
+			info = mesh_pb2.User()
+			info.ParseFromString(message_packet.decoded.payload)
+			logging.info('Received node info:')
+			logging.info(info)
 
 		elif message_packet.decoded.portnum == portnums_pb2.POSITION_APP:
 			pos = mesh_pb2.Position()
@@ -107,19 +113,28 @@ def on_message(client, userdata, msg):
 	:param msg: An instance of MQTTMessage. This is a
 	'''
 	
+	# Define the service envelope
 	service_envelope = mqtt_pb2.ServiceEnvelope()
 
 	try:
+     	# Parse the message payload
 		service_envelope.ParseFromString(msg.payload)
+
 		logging.info('Received a packet:')
 		logging.info(service_envelope)
+
+		# Extract the message packet from the service envelope
 		message_packet = service_envelope.packet
-	except Exception as e:
+	
+ 	except Exception as e:
 		#logging.error(f'Failed to parse message: {str(e)}')
 		return
 
+	# Check if the message is encrypted before decrypting it
 	if message_packet.HasField('encrypted') and not message_packet.HasField('decoded'):
 		decode_encrypted(message_packet)
+
+	# If the message is not encrypted, log the payload (this should not happen)
 	else:
 		logging.warning('Received an unencrypted message')
 		logging.info(f'Payload: {message_packet}')
@@ -154,12 +169,13 @@ def on_unsubscribe(client, userdata, mid, reason_code_list, properties):
 	:param properties: The properties returned by the broker
 	'''
 
-	# Be careful, the reason_code_list is only present in MQTTv5.
-	# In MQTTv3 it will always be empty
+	# reason_code_list is only present in MQTTv5, it will always be empty in MQTTv3
 	if len(reason_code_list) == 0 or not reason_code_list[0].is_failure:
 		logging.info('Broker accepted the unsubscription(s)')
 	else:
 		logging.error(f'Broker replied with failure: {reason_code_list[0]}')
+
+	# Disconnect from the broker
 	client.disconnect()
 
 
@@ -175,13 +191,9 @@ if __name__ == '__main__':
 	parser.add_argument('--key', default='AQ==', help='Encryption key')
 	args = parser.parse_args()
 
-	# Ensure the key is padded and formatted correctly
-	padded_key   = args.key.ljust(len(args.key) + ((4 - (len(args.key) % 4)) % 4), '=')
-	replaced_key = padded_key.replace('-', '+').replace('_', '/')
-	key          = replaced_key
-
-	broadcast_id = 4294967295 # Do we need to change this for a custom channel?
-
+	# Set the broadcast ID (Do we need to change this for a custom channel?)
+	broadcast_id = 4294967295
+ 
 	# Create the MQTT client
 	client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id='', clean_session=True, userdata=None) # Defaults to mqtt.MQTTv311 (change with protocol=mqtt.MQTTv5)
 
