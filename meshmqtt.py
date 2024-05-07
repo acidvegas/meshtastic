@@ -33,12 +33,12 @@ def decode_encrypted(message_packet):
 	:param message_packet: The message packet to decrypt
  	'''
 
-	try: 
+	try:
 		# Ensure the key is formatted and padded correctly before turning it into bytes
 		padded_key = args.key.ljust(len(args.key) + ((4 - (len(args.key) % 4)) % 4), '=')
 		key = padded_key.replace('-', '+').replace('_', '/')
 		key_bytes = base64.b64decode(key.encode('ascii'))
-  
+
 		# Extract the nonce from the packet
 		nonce_packet_id = getattr(message_packet, 'id').to_bytes(8, 'little')
 		nonce_from_node = getattr(message_packet, 'from').to_bytes(8, 'little')
@@ -64,6 +64,12 @@ def decode_encrypted(message_packet):
 			}
 			logging.info('Received text message:')
 			logging.info(text)
+   
+		elif message_packet.decoded.portnum == portnums_pb2.MAP_REPORT_APP:
+            pos = mesh_pb2.Position()
+            pos.ParseFromString(message_packet.decoded.payload)
+            logging.info('Received map report:')
+			logging.info(pos)
 
 		elif message_packet.decoded.portnum == portnums_pb2.NODEINFO_APP:
 			info = mesh_pb2.User()
@@ -112,12 +118,12 @@ def on_message(client, userdata, msg):
 	:param userdata: The private user data as set in Client() or user_data_set()
 	:param msg: An instance of MQTTMessage. This is a
 	'''
-	
+
 	# Define the service envelope
 	service_envelope = mqtt_pb2.ServiceEnvelope()
 
 	try:
-     	# Parse the message payload
+	 	# Parse the message payload
 		service_envelope.ParseFromString(msg.payload)
 
 		logging.info('Received a packet:')
@@ -125,8 +131,8 @@ def on_message(client, userdata, msg):
 
 		# Extract the message packet from the service envelope
 		message_packet = service_envelope.packet
-	
- 	except Exception as e:
+
+	except Exception as e:
 		#logging.error(f'Failed to parse message: {str(e)}')
 		return
 
@@ -193,7 +199,7 @@ if __name__ == '__main__':
 
 	# Set the broadcast ID (Do we need to change this for a custom channel?)
 	broadcast_id = 4294967295
- 
+
 	# Create the MQTT client
 	client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id='', clean_session=True, userdata=None) # Defaults to mqtt.MQTTv311 (change with protocol=mqtt.MQTTv5)
 
