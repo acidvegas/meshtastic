@@ -305,9 +305,17 @@ class MeshtasticMQTT(object):
 				data.ParseFromString(message_packet.decoded.payload)
 				logging.info('Received telemetry:')
 
-				data_dict = {key: value for key, value in data}
-				print(data_dict)
-
+				data_dict = {}
+				for field, value in data.ListFields():
+					if field.name == 'device_metrics':
+						text = clean_dict({item.name: getattr(value, item.name) for item in value.DESCRIPTOR.fields if hasattr(value, item.name)})
+						if text:
+							logging.info(text)
+					else:
+						data_dict[field.name] = value
+						
+				logging.info(data_dict)
+				
 				if getattr(data, 'device_metrics'):
 					text = {
 						'battery_level'       : getattr(data.device_metrics, 'battery_level'),

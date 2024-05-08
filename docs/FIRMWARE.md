@@ -43,14 +43,14 @@ And place the follow code AFTER the above lines:
 
 ```cpp
 // Display memory usage using the MemGet class
-uint32_t freeHeap = memGet.getFreeHeap();
-uint32_t totalHeap = memGet.getHeapSize();
+uint32_t freeHeap = ESP.getFreeHeap();
+uint32_t totalHeap = ESP.getHeapSize();
 uint32_t usedHeap = totalHeap - freeHeap;
 display->drawString(x, y + FONT_HEIGHT_SMALL * 4, "Heap: " + String(usedHeap / 1024) + "/" + String(totalHeap / 1024) + " KB");
 
 // Display PSRAM usage using the MemGet class
-uint32_t freePsram = memGet.getFreePsram();
-uint32_t totalPsram = memGet.getPsramSize();
+uint32_t freePsram = ESP.getFreePsram();
+uint32_t totalPsram = ESP.getPsramSize();
 uint32_t usedPsram = totalPsram - freePsram;
 display->drawString(x, y + FONT_HEIGHT_SMALL * 5, "PSRAM: " + String(usedPsram / 1024) + "/" + String(totalPsram / 1024) + " KB");
 ```
