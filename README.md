@@ -29,6 +29,8 @@ The goal here is to create simple & clean modules to interface with the hardware
 - Documentation on MQTT bridging for high availability
 - Bridge for IRC to allow channel messages to relay over Meshtastic & all Meshtastic events to relay into IRC. *(IRC to Meshtastic will require a command like `!mesh <message here>` to avoid overloading the traffic over LoRa)*
 
+## Notes
+- [Meshtastic PortNum List](https://buf.build/meshtastic/protobufs/docs/main:meshtastic#meshtastic.PortNum)
 ___
 
 ###### Mirrors for this repository: [acid.vegas](https://git.acid.vegas/meshtastic) • [SuperNETs](https://git.supernets.org/acidvegas/meshtastic) • [GitHub](https://github.com/acidvegas/meshtastic) • [GitLab](https://gitlab.com/acidvegas/meshtastic) • [Codeberg](https://codeberg.org/acidvegas/meshtastic)

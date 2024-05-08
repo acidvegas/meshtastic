@@ -26,11 +26,21 @@ except ImportError:
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %I:%M:%S')
 
 
+def clean_dict(dictionary: dict) -> dict:
+	'''
+	Remove empty fields from a dictionary.
+
+	:param dictionary: The dictionary to remove empty fields from
+	'''
+	
+	return {key: value for key, value in dictionary.items() if value}
+
+
 class MeshtasticMQTT(object):
 	def __init__(self):
 		'''Initialize the Meshtastic MQTT client'''
 
-		self.broadcast_id = 4294967295
+		self.broadcast_id = 4294967295 # Our channel ID
 		self.key = None
 
 
@@ -148,6 +158,18 @@ class MeshtasticMQTT(object):
 		if message_packet.HasField('encrypted') and not message_packet.HasField('decoded'):
 			message_packet = self.decrypt_message_packet(message_packet)
 
+			text = {
+				'from'       : getattr(message_packet, 'from'),
+				'to'         : getattr(message_packet, 'to'),
+				'channel'    : getattr(message_packet, 'channel'),
+				'id'         : getattr(message_packet, 'id'),
+				'rx_time'    : getattr(message_packet, 'rx_time'),
+				'hop_limit'  : getattr(message_packet, 'hop_limit'),
+				'priority'   : getattr(message_packet, 'priority'),
+				'hop_start'  : getattr(message_packet, 'hop_start')
+			}
+			logging.info(text)
+
 			if message_packet.decoded.portnum == portnums_pb2.UNKNOWN_APP:
 				logging.warning('Received an unknown app message:')
 				logging.info(message_packet)
@@ -172,14 +194,40 @@ class MeshtasticMQTT(object):
 			elif message_packet.decoded.portnum == portnums_pb2.POSITION_APP:
 				data = mesh_pb2.Position()
 				data.ParseFromString(message_packet.decoded.payload)
+
+				data_dict = {key: value for key, value in data}
+				print(data_dict)
+
 				logging.info('Received position:')
-				logging.info(data)
+				loc = {
+					'lattitude'       : getattr(data, 'latitude_i') / 1e7,
+					'longitude'       : getattr(data, 'longitude_i') / 1e7,
+					'altitude'        : getattr(data, 'altitude') / 1000,
+					'location_source' : getattr(data, 'location_source'),
+					'altitude_source' : getattr(data, 'altitude_source'),
+					'pdop'            : getattr(data, 'PDOP'),
+					'hdop'            : getattr(data, 'HDOP'),
+					'vdop'            : getattr(data, 'VDOP'),
+					'gps_accuracy'    : getattr(data, 'gps_accuracy'),
+					'ground_speed'    : getattr(data, 'ground_speed'),
+					'ground_track'    : getattr(data, 'ground_track'),
+					'fix_quality'     : getattr(data, 'fix_quality'),
+					'fix_type'        : getattr(data, 'fix_type'),
+					'sats_in_view'    : getattr(data, 'sats_in_view'),
+					'sensor_id'       : getattr(data, 'sensor_id'),
+					'next_update'     : getattr(data, 'next_update'),
+					'seq_number'      : getattr(data, 'seq_number'),
+					'precision_bits'  : getattr(data, 'precision_bits')
+				}
+
+				if (loc := clean_dict(loc)):
+					logging.info(loc)
 
 			elif message_packet.decoded.portnum == portnums_pb2.NODEINFO_APP:
 				data = mesh_pb2.NodeInfo()
-				data.ParseFromString(message_packet.decoded.payload)
+				#data.ParseFromString(message_packet.decoded.payload)
 				logging.info('Received node info:')
-				logging.info(data)
+				logging.info(message_packet)
 
 			elif message_packet.decoded.portnum == portnums_pb2.ROUTING_APP:
 				data = mesh_pb2.Routing()
@@ -242,10 +290,9 @@ class MeshtasticMQTT(object):
 				logging.info(data)
 
 			elif message_packet.decoded.portnum == portnums_pb2.STORE_FORWARD_APP:
-				data = mesh_pb2.StoreForward()
-				data.ParseFromString(message_packet.decoded.payload)
 				logging.info('Received store and forward:')
-				logging.info(data)
+				logging.info(message_packet)
+				logging.info(message_packet.decoded.payload)
 
 			elif message_packet.decoded.portnum == portnums_pb2.RANGE_TEST_APP:
 				data = mesh_pb2.RangeTest()
@@ -257,7 +304,34 @@ class MeshtasticMQTT(object):
 				data = telemetry_pb2.Telemetry()
 				data.ParseFromString(message_packet.decoded.payload)
 				logging.info('Received telemetry:')
-				logging.info(data)
+
+				data_dict = {key: value for key, value in data}
+				print(data_dict)
+
+				if getattr(data, 'device_metrics'):
+					text = {
+						'battery_level'       : getattr(data.device_metrics, 'battery_level'),
+						'voltage'             : getattr(data.device_metrics, 'voltage'),
+						'channel_utilization' : getattr(data.device_metrics, 'channel_utilization'),
+						'air_util_tx'         : getattr(data.device_metrics, 'air_util_tx'),
+						'uptime_seconds'      : getattr(data.device_metrics, 'uptime_seconds')
+					}
+					if (text := clean_dict(text)):
+						logging.info(text)
+
+				if getattr(data, 'environment_metrics'):
+					env_metrics = {
+						'barometric_pressure' : getattr(data.environment_metrics, 'barometric_pressure'),
+						'current'             : getattr(data.environment_metrics, 'current'),
+						'distance'            : getattr(data.environment_metrics, 'distance'),
+						'gas_resistance'      : getattr(data.environment_metrics, 'gas_resistance'),
+						'iaq'                 : getattr(data.environment_metrics, 'iaq'),
+						'relative_humidity'   : getattr(data.environment_metrics, 'relative_humidity'),
+						'temperature'         : getattr(data.environment_metrics, 'temperature'),
+						'voltage'             : getattr(data.environment_metrics, 'voltage')
+					}
+					if (env_metrics := clean_dict(env_metrics)):
+						logging.info(env_metrics)
 
 			elif message_packet.decoded.portnum == portnums_pb2.ZPS_APP:
 				data = mesh_pb2.Zps()
@@ -281,7 +355,13 @@ class MeshtasticMQTT(object):
 				neighborInfo = mesh_pb2.NeighborInfo()
 				neighborInfo.ParseFromString(message_packet.decoded.payload)
 				logging.info('Received neighbor info:')
-				logging.info(neighborInfo)
+				info = {
+					'node_id'                      : getattr(neighborInfo, 'node_id'),
+					'last_sent_by_id'              : getattr(neighborInfo, 'last_sent_by_id'),
+					'node_broadcast_interval_secs' : getattr(neighborInfo, 'node_broadcast_interval_secs'),
+					'neighbors'                    : getattr(neighborInfo, 'neighbors')
+				}
+				logging.info(info)
 
 			elif message_packet.decoded.portnum == portnums_pb2.ATAK_PLUGIN:
 				data = mesh_pb2.AtakPlugin()
@@ -312,6 +392,7 @@ class MeshtasticMQTT(object):
 				pos.ParseFromString(message_packet.decoded.payload)
 				logging.info('Received map report:')
 				logging.info(pos)
+
 			else:
 				logging.warning('Received an unencrypted message')
 				logging.info(f'Payload: {message_packet}')
