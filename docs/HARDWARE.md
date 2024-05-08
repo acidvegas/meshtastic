@@ -2,7 +2,7 @@
 > A simple overview of popular hardware options for Meshtastic usage
 
 ## LilyGo T-Deck
-![](.screens/tdeck.png)
+![](../.screens/tdeck.png)
 
 ###### Information
 This is the only FULL stand-alone device that I know of for Meshtastic, that once provisioned, you do not need a phone or computer to interface with it. The device comes with a touchscreen, full keyboard, built in speaker, and more.
@@ -18,7 +18,7 @@ This is the only FULL stand-alone device that I know of for Meshtastic, that onc
 ___
 
 ## LilyGo T-Beam
-![](.screens/tbeam.png)
+![](../.screens/tbeam.png)
 
 ###### Information
 Very popular Meshtastic device. I personally use this for my home station
@@ -33,7 +33,7 @@ ___
 ## Heltec Lora 32 V3
 Great as a keychain for on the go meshtastic! Can power it directly from your phone if you want.
 
-![](.screens/heltec.png)
+![](../.screens/heltec.png)
 
 - [Heltec Lora 32 V3](https://heltec.org/project/wifi-lora-32-v3/)
 
@@ -42,7 +42,7 @@ ___
 ## WisBlock
 These devices use an nrf52 chip instead of an esp32 chip. They are EXTREMELY low powered and are the best for solar nodes
 
-![](.screens/wisblock.png)
+![](../.screens/wisblock.png)
 
 - [WisBlock Starter Kit](https://store.rakwireless.com/products/wisblock-starter-kit?variant=41786685063366)
 **Note:** Make sure you get the nrf52 Arduino core and ensure you get the right frequency for your location.
