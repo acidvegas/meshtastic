@@ -8,7 +8,7 @@ The goal here is to create simple & clean modules to interface with the hardware
 
 ## Documentation
 - [Hardware Options](./docs/HARDWARE.md)
-- [Setup Hardware](./SETUP.md)
+- [Setup Hardware](./Sdocs/ETUP.md)
 - [Setup a T-Deck](./docs/T-DECK.md)
 - [Firmware Hacks & Customization](./docs/FIRMWARE.md)
 - [MQTT Notes](./docs/MQTT.md)
